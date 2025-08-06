@@ -1,7 +1,9 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.*;
 import javax.swing.Timer;
+import java.util.List;
 
 public class Game extends JFrame {
     final int ROWNUM = 11, COLNUM = 11;
@@ -10,27 +12,30 @@ public class Game extends JFrame {
     Tile cat;
     boolean gameOver = false;
     int moves = 0;
+    private Timer visualizationTimer;
 
     // UI components
     private final JComboBox<String> algoSelector;
+    private final JToggleButton visualizeToggle;
     private final JButton visualizeBtn;
     private final JLabel statusLabel;
+    private final JButton resetBtn;
 
     public Game() {
-        setTitle("Catch the Crazy Cat");
+        setTitle("Hex Cat Escape Challenge");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         // Control panel
         JPanel controlPanel = new JPanel();
         algoSelector = new JComboBox<>(new String[]{"BFS", "DFS", "A*"});
-        visualizeBtn = new JButton("Visualize Pathfinding");
+        visualizeToggle = new JToggleButton("Auto Visualize");
+        visualizeBtn = new JButton("Visualize Now");
         statusLabel = new JLabel("Moves: 0");
-
-        JButton resetBtn = new JButton("Reset");
-        resetBtn.addActionListener(e -> resetGame());
+        resetBtn = new JButton("Reset Game");
 
         controlPanel.add(algoSelector);
+        controlPanel.add(visualizeToggle);
         controlPanel.add(visualizeBtn);
         controlPanel.add(resetBtn);
         controlPanel.add(statusLabel);
@@ -41,7 +46,14 @@ public class Game extends JFrame {
         add(gridPanel, BorderLayout.CENTER);
 
         // Event listeners
+        visualizeToggle.addActionListener(e -> {
+            if (visualizeToggle.isSelected() && !gameOver) {
+                visualizePathfinding();
+            }
+        });
+
         visualizeBtn.addActionListener(e -> visualizePathfinding());
+        resetBtn.addActionListener(e -> resetGame());
 
         pack();
         setResizable(false);
@@ -90,6 +102,11 @@ public class Game extends JFrame {
             moves++;
             moveCatOneStep();
             statusLabel.setText("Moves: " + moves);
+
+            // Auto-visualize if toggle is on
+            if (visualizeToggle.isSelected()) {
+                visualizePathfinding();
+            }
         }
     }
 
@@ -102,11 +119,11 @@ public class Game extends JFrame {
 
         while (!queue.isEmpty()) {
             Tile current = queue.poll();
-            if (StrategyUtils.isAtBorder(current, ROWNUM, COLNUM)) {
+            if (isAtBorder(current)) {
                 exitTile = current;
                 break;
             }
-            for (Tile neighbor : StrategyUtils.getNeighbors(current, grid, ROWNUM, COLNUM)) {
+            for (Tile neighbor : getNeighbors(current)) {
                 if (!neighbor.isBlocked && !parent.containsKey(neighbor)) {
                     parent.put(neighbor, current);
                     queue.add(neighbor);
@@ -114,9 +131,10 @@ public class Game extends JFrame {
             }
         }
 
+        // Game over conditions
         if (exitTile == null) {
             gameOver = true;
-            statusLabel.setText("You win! Cat trapped in " + moves + " moves");
+            showGameOverPopup(true); // Win
             return;
         }
 
@@ -131,50 +149,107 @@ public class Game extends JFrame {
         cat = nextStep;
         cat.setCat(true);
 
-        if (StrategyUtils.isAtBorder(cat, ROWNUM, COLNUM)) {
+        if (isAtBorder(cat)) {
             gameOver = true;
-            statusLabel.setText("Cat escaped! You lose");
+            showGameOverPopup(false); // Lose
+        }
+    }
+
+    private void showGameOverPopup(boolean isWin) {
+        // Stop any ongoing visualization
+        if (visualizationTimer != null && visualizationTimer.isRunning()) {
+            visualizationTimer.stop();
+        }
+
+        String message = isWin ?
+                "You win! Cat trapped in " + moves + " moves" :
+                "Cat escaped! You lose";
+
+        int option = JOptionPane.showOptionDialog(
+                this,
+                message + "\nPlay again?",
+                "Game Over",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                new Object[]{"Play Again", "Quit"},
+                "Play Again"
+        );
+
+        if (option == JOptionPane.YES_OPTION) {
+            resetGame();
+        } else {
+            System.exit(0);
         }
     }
 
     private void visualizePathfinding() {
-        for (int i = 0; i < ROWNUM; i++) {
-            for (int j = 0; j < COLNUM; j++) {
-                grid[i][j].resetColor();
-            }
+        // Stop any previous visualization
+        if (visualizationTimer != null && visualizationTimer.isRunning()) {
+            visualizationTimer.stop();
         }
 
+        resetGridColors();
+        setControlsEnabled(false);
+
         String choice = (String) algoSelector.getSelectedItem();
-        PathfindingStrategy strat = switch (choice) {
-            case "DFS" -> new DFSStrategy();
-            case "A*" -> new AStarStrategy();
-            default -> new BFSStrategy();
-        };
+        PathfindingStrategy strat;
+        switch(choice) {
+            case "DFS": strat = new DFSStrategy(); break;
+            case "A*":  strat = new AStarStrategy(); break;
+            default:    strat = new BFSStrategy();
+        }
 
         PathfindingResult result = strat.findPath(grid, cat, ROWNUM, COLNUM);
-        visualizeBtn.setEnabled(false);
 
         Iterator<Tile> visitIt = result.visitedOrder.iterator();
         Iterator<Tile> pathIt = result.path.iterator();
 
-        Timer timer = new Timer(100, null);
-        timer.addActionListener(ev -> {
+        visualizationTimer = new Timer(100, e -> {
             if (visitIt.hasNext()) {
                 visitIt.next().highlightExplored();
             } else if (pathIt.hasNext()) {
                 pathIt.next().highlightPath();
             } else {
-                timer.stop();
-                visualizeBtn.setEnabled(true);
-                statusLabel.setText("Moves: " + moves);
+                visualizationTimer.stop();
+                setControlsEnabled(true);
+                if (!gameOver) {
+                    statusLabel.setText("Moves: " + moves);
+                }
             }
-            statusLabel.setText(String.format("Nodes: %d | Path: %d",
-                    result.getNodesExplored(), result.getPathLength()));
+            statusLabel.setText(String.format("Nodes: %d | Path: %d | Moves: %d",
+                    result.getNodesExplored(), result.getPathLength(), moves));
         });
-        timer.start();
+        visualizationTimer.start();
+    }
+
+    private void resetGridColors() {
+        for (int i = 0; i < ROWNUM; i++) {
+            for (int j = 0; j < COLNUM; j++) {
+                grid[i][j].resetColor();
+            }
+        }
+    }
+
+    private void setControlsEnabled(boolean enabled) {
+        for (int i = 0; i < ROWNUM; i++) {
+            for (int j = 0; j < COLNUM; j++) {
+                grid[i][j].setEnabled(enabled && !gameOver);
+            }
+        }
+        algoSelector.setEnabled(enabled);
+        visualizeToggle.setEnabled(enabled);
+        visualizeBtn.setEnabled(enabled);
+        resetBtn.setEnabled(enabled);
     }
 
     private void resetGame() {
+        // Stop any running timers
+        if (visualizationTimer != null && visualizationTimer.isRunning()) {
+            visualizationTimer.stop();
+        }
+
+        // Reset board
         for (int i = 0; i < ROWNUM; i++) {
             for (int j = 0; j < COLNUM; j++) {
                 grid[i][j].setBlocked(false);
@@ -182,14 +257,39 @@ public class Game extends JFrame {
             }
         }
 
+        // Reset cat
         cat.setCat(false);
         cat = grid[ROWNUM/2][COLNUM/2];
         cat.setCat(true);
 
+        // Reset game state
         placeObstacles();
         gameOver = false;
         moves = 0;
         statusLabel.setText("Moves: 0");
+        setControlsEnabled(true);
+    }
+
+    private List<Tile> getNeighbors(Tile t) {
+        List<Tile> neighbors = new ArrayList<>();
+        int[][] dirs = getDirections(t.i);
+        for (int[] d : dirs) {
+            int ni = t.i + d[0], nj = t.j + d[1];
+            if (ni >= 0 && ni < ROWNUM && nj >= 0 && nj < COLNUM) {
+                neighbors.add(grid[ni][nj]);
+            }
+        }
+        return neighbors;
+    }
+
+    private boolean isAtBorder(Tile t) {
+        return t.i == 0 || t.i == ROWNUM - 1 || t.j == 0 || t.j == COLNUM - 1;
+    }
+
+    private int[][] getDirections(int row) {
+        return (row % 2 == 0) ?
+                new int[][]{{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{1,-1}} :
+                new int[][]{{-1,0},{1,0},{0,-1},{0,1},{-1,1},{1,1}};
     }
 
     public static void main(String[] args) {
