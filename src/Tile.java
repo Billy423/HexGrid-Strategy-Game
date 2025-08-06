@@ -5,6 +5,7 @@ import java.awt.Font;
 public class Tile extends JButton {
     public int i, j;
     public boolean isBlocked = false, isCat = false;
+    public boolean stateChanged = false;
     private static final Font TILE_FONT = new Font("Arial", Font.BOLD, 20);
 
     public Tile(int i, int j) {
@@ -18,12 +19,14 @@ public class Tile extends JButton {
     public void setBlocked(boolean b) {
         isBlocked = b;
         isCat = false;
+        stateChanged = true;
         updateAppearance();
     }
 
     public void setCat(boolean c) {
         isCat = c;
         isBlocked = false;
+        stateChanged = true;
         updateAppearance();
     }
 
@@ -31,6 +34,7 @@ public class Tile extends JButton {
         setBackground(null);
         setOpaque(false);
         setBorderPainted(true);
+        stateChanged = false;
         updateAppearance();
     }
 

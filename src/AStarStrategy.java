@@ -41,10 +41,11 @@ public class AStarStrategy implements PathfindingStrategy {
     }
 
     private int heuristic(Tile t, int rowNum, int colNum) {
-        return Math.min(
-                Math.min(t.i, rowNum - 1 - t.i),
-                Math.min(t.j, colNum - 1 - t.j)
-        );
+        int toTop = t.i;
+        int toBottom = rowNum - 1 - t.i;
+        int toLeft = t.j;
+        int toRight = colNum - 1 - t.j;
+        return Math.min(Math.min(toTop, toBottom), Math.min(toLeft, toRight));
     }
 
     private static class Node {

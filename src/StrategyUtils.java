@@ -2,11 +2,21 @@ import java.util.*;
 
 public class StrategyUtils {
 
+    private static final int[][][] DIR_CACHE = new int[2][][];
+
+    static {
+        DIR_CACHE[0] = new int[][]{{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{1,-1}};
+        DIR_CACHE[1] = new int[][]{{-1,0},{1,0},{0,-1},{0,1},{-1,1},{1,1}};
+    }
+
     public static List<Tile> getNeighbors(Tile tile, Tile[][] grid, int rowNum, int colNum) {
-        List<Tile> neighbors = new ArrayList<>();
-        int[][] dirs = getDirections(tile.i);
+        List<Tile> neighbors = new ArrayList<>(6);
+        int parity = tile.i % 2;
+        int[][] dirs = DIR_CACHE[parity];
+
         for (int[] d : dirs) {
-            int ni = tile.i + d[0], nj = tile.j + d[1];
+            int ni = tile.i + d[0];
+            int nj = tile.j + d[1];
             if (ni >= 0 && ni < rowNum && nj >= 0 && nj < colNum) {
                 neighbors.add(grid[ni][nj]);
             }
