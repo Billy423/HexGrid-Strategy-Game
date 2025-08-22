@@ -1,3 +1,7 @@
+package com.example.hexgame.utils;
+
+import com.example.hexgame.model.Tile;
+
 import java.util.*;
 
 public class StrategyUtils {

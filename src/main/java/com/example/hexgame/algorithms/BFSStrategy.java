@@ -1,3 +1,8 @@
+package com.example.hexgame.algorithms;
+
+import com.example.hexgame.model.Tile;
+import com.example.hexgame.utils.StrategyUtils;
+
 import java.util.*;
 
 public class BFSStrategy implements PathfindingStrategy {

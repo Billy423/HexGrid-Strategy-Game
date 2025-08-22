@@ -1,3 +1,9 @@
+package com.example.hexgame.utils;
+
+import com.example.hexgame.algorithms.BFSStrategy;
+import com.example.hexgame.algorithms.PathfindingStrategy;
+import com.example.hexgame.model.Tile;
+
 import java.util.*;
 
 public class PathState {

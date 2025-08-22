@@ -1,3 +1,7 @@
+package com.example.hexgame.algorithms;
+
+import com.example.hexgame.model.Tile;
+
 import java.util.List;
 
 public class PathfindingResult {

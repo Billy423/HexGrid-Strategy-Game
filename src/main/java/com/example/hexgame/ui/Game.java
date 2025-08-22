@@ -1,3 +1,12 @@
+package com.example.hexgame.ui;
+
+import com.example.hexgame.algorithms.AStarStrategy;
+import com.example.hexgame.algorithms.BFSStrategy;
+import com.example.hexgame.algorithms.DFSStrategy;
+import com.example.hexgame.algorithms.PathfindingResult;
+import com.example.hexgame.model.Tile;
+import com.example.hexgame.utils.PathState;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.*;
