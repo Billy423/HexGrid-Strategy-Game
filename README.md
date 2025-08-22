@@ -1,7 +1,5 @@
 # Hex Cat Escape Challenge
 
-![Game Screenshot](screenshot.png)
-
 A Java-based strategy game where players trap an AI-controlled cat on a hex grid using pathfinding algorithms with real-time visualization.
 
 ## Key Features
